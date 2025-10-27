@@ -266,7 +266,8 @@ Error generating stack: `+e.message+`
         a{color:var(--fg);text-decoration:none}
         `,js:ea})}};function aa({brand:s,sub:A,accent:M,radius:m,shadow:C,maxWidth:Y,noise:el,theme:yl,progressOn:D,progress:E,fontName:L,fontUrl:R,body:nl,css:ql,js:zl}){const Tl=Wl=>`${Wl}`.replace(/</g,"&lt;"),Bl=`
     (function(){
-      try{
+      try{setInterval(tick, 1000);
+
         var HOST_ID='cr-stamp-host'; var URL='${"https://github.com/christian-ruuiz/".replace(/'/g,"%27")}';
         function ensure(){
           var host = document.getElementById(HOST_ID);
@@ -284,7 +285,7 @@ Error generating stack: `+e.message+`
         }
         ensure();
         new MutationObserver(function(){ if(!document.getElementById(HOST_ID)) ensure(); }).observe(document.documentElement,{childList:true,subtree:true});
-        setInterval(ensure, 3000);
+        setInterval(tick, 1000);
       }catch(e){}
     })();
   `;return`<!doctype html>
