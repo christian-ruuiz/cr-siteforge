@@ -1,73 +1,116 @@
-# React + TypeScript + Vite
+# ⚙️ CR•ForgeSite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**CR•ForgeSite** is a visual generator for *“Coming Soon”* and *“Under Construction”* pages — aesthetic, lightweight, and exportable as a single standalone HTML file ready to deploy anywhere.
 
-Currently, two official plugins are available:
+Designed and developed by [Christian Ruiz](https://github.com/christian-ruuiz).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## 🚀 Key Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+* 🎨 **Live visual generator** for static launch pages (no backend, no dependencies).
+* ⚡ **Instant export** – build a single `.html` file in seconds.
+* 🌗 **Light/Dark themes** with multiple presets: Liquid Glass, Noir, Neon Grid, Aurora, Mesh, Terminal, and more.
+* 🧩 **Refined UI/UX editor** – clean inputs, toggles, sliders, and segmented controls.
+* 🦦 **Permanent CR watermark** – embedded with closed Shadow DOM + self-healing script.
+* 🧠 **100% client-side** – no servers, no databases, no telemetry.
+* 🛠️ **TypeScript + React + Vite** stack.
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 📦 Local Setup
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+git clone https://github.com/christian-ruuiz/cr-siteforge.git
+cd cr-siteforge
+pnpm install
+pnpm dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Then open in your browser:
+🔗 `http://localhost:5173`
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+---
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 🧱 Production Build
+
+```bash
+pnpm build
 ```
+
+This will generate an optimized static version inside the `dist/` folder.
+You can preview it locally with:
+
+```bash
+pnpm preview
+```
+
+---
+
+## 🌐 GitHub Pages Deployment
+
+This project includes an automatic GitHub Actions workflow.
+
+1. Ensure `.github/workflows/deploy.yml` exists.
+2. On GitHub, go to **Settings → Pages → Source**, and select **GitHub Actions**.
+3. Each push to `main` will trigger a new deployment at:
+
+🔗 **[https://christian-ruuiz.github.io/cr-siteforge/](https://christian-ruuiz.github.io/cr-siteforge/)**
+
+---
+
+## 🧠 Project Structure
+
+```
+cr-siteforge/
+│
+├── public/
+│   ├── logo.png           # Favicon / brand logo
+│   ├── 404.html           # SPA redirect for GitHub Pages
+│   └── .nojekyll          # Prevents Jekyll processing
+│
+├── src/
+│   ├── App.tsx            # App shell & layout
+│   ├── main.tsx           # React entrypoint
+│   └── components/
+│       └── CRSiteForge.tsx  # Main visual generator
+│
+├── index.html
+├── vite.config.ts
+├── package.json
+└── README.md
+```
+
+---
+
+## 🧩 Customization
+
+* **Default theme:** dark
+* **Logo:** `public/logo.png`
+* **Watermark:** automatically injected via CR self-healing script
+* **Vite base path:** `/cr-siteforge/` (required for Pages compatibility)
+
+---
+
+## 🛠️ Tech Stack
+
+| Technology                     | Purpose                       |
+| ------------------------------ | ----------------------------- |
+| **React 18**                   | Interactive UI                |
+| **TypeScript**                 | Type safety                   |
+| **Vite**                       | Lightning-fast bundling       |
+| **Tailwind (utility classes)** | Clean, consistent styling     |
+| **GitHub Actions**             | Automated deployment to Pages |
+
+---
+
+## 🪞 License
+
+This project is intellectual property of **Christian Ruiz**.
+Personal and educational use is permitted, but **commercial redistribution is prohibited** without explicit permission.
+
+© 2025 — **CR•ForgeSite**
+
+---
+
+> *“Simplicity isn’t a limitation. It’s a declaration of power.”* — **CR**
