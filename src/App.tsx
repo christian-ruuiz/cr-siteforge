@@ -91,7 +91,7 @@ export default function App() {
               </button>
 
               <a
-                href="https://github.com/"
+                href="https://github.com/christian-ruuiz"
                 target="_blank"
                 rel="noreferrer"
                 className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm backdrop-blur-md hover:bg-white/15 active:scale-[.98] transition inline-flex items-center gap-2"
@@ -147,7 +147,7 @@ export default function App() {
                   Open generator
                 </a>
                 <a
-                  href="https://github.com/"
+                  href="https://github.com/christian-ruuiz/cr-siteforge"
                   target="_blank"
                   rel="noreferrer"
                   className="rounded-xl border border-white/15 bg-white/10 px-4 py-2.5 text-sm backdrop-blur-md hover:bg-white/15 active:scale-[.98] transition inline-flex items-center gap-2"
@@ -260,7 +260,7 @@ export default function App() {
         <div className="mx-auto max-w-7xl px-4 py-6 md:px-8 text-xs text-white/70 flex items-center justify-between">
           <span>© {new Date().getFullYear()} CR•ForgeSite — fast “Coming Soon” pages for everyone</span>
           <a
-            href="https://github.com/"
+            href="https://github.com/christian-ruuiz"
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-2 hover:text-white/90"
