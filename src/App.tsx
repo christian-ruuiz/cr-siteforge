@@ -1,13 +1,18 @@
 import { useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, useMotionValue, useTransform } from "framer-motion";
 
-export default function Hero() {
+// Pass your actual generator as a prop or import it in the parent and provide it here.
+// Example usage in your page/App: <Hero Generator={Generator} />
+export default function Hero({ Generator }: { Generator?: React.ComponentType }) {
   const rootRef = useRef<HTMLDivElement>(null);
 
-  // Spotlight cursor effect
+  // Detect coarse pointers (mobile) and disable heavy effects
+  const isCoarse = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+
+  // Spotlight cursor effect (desktop only)
   useEffect(() => {
     const el = rootRef.current;
-    if (!el) return;
+    if (!el || isCoarse) return;
     const onMove = (e: MouseEvent) => {
       const rect = el.getBoundingClientRect();
       const x = e.clientX - rect.left;
@@ -17,130 +22,174 @@ export default function Hero() {
     };
     el.addEventListener("mousemove", onMove);
     return () => el.removeEventListener("mousemove", onMove);
-  }, []);
+  }, [isCoarse]);
 
   return (
-    <section
-      ref={rootRef}
-      className="relative overflow-hidden min-h-[92vh] grid place-items-center px-6 md:px-12 lg:px-16 bg-[#0b0812] text-white"
-      style={{
-        backgroundImage:
-          "radial-gradient(600px 300px at var(--mx,50%) var(--my,50%), rgba(255,255,255,0.08), transparent 60%)",
-      }}
-    >
-      <BackgroundDecor />
+    <>
+      <section
+        ref={rootRef}
+        role="banner"
+        aria-label="CR•ForgeSite hero"
+        className="relative overflow-hidden min-h-[92svh] grid place-items-center px-6 md:px-12 lg:px-16 text-white [padding-top:calc(env(safe-area-inset-top,0px)+2rem)] [padding-bottom:calc(env(safe-area-inset-bottom,0px)+2rem)] bg-[#0b0812]"
+        style={{
+          backgroundImage:
+            "radial-gradient(520px 260px at var(--mx,50%) var(--my,50%), rgba(255,255,255,0.08), transparent 60%)",
+        }}
+      >
+        <BackgroundDecor />
 
-      <div className="relative z-10 w-full max-w-7xl">
-        <div className="grid lg:grid-cols-[1.05fr,0.95fr] gap-10 items-center">
-          {/* Copy & CTAs */}
-          <div className="text-center lg:text-left">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs md:text-sm backdrop-blur-sm"
-            >
-              <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="opacity-80">Exports a single, upload-ready HTML file</span>
-            </motion.div>
-
-            <motion.h1
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease: "easeOut", delay: 0.05 }}
-              className="mt-5 text-4xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight"
-            >
-              <span className="bg-gradient-to-br from-white via-white to-white/60 bg-clip-text text-transparent">
-                CR•ForgeSite
-              </span>
-              <br />
-              <span className="bg-gradient-to-r from-fuchsia-400 via-sky-400 to-emerald-300 bg-clip-text text-transparent">
-                Build stunning Coming Soon pages in minutes
-              </span>
-            </motion.h1>
-
-            <motion.p
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease: "easeOut", delay: 0.1 }}
-              className="mt-6 max-w-2xl mx-auto lg:mx-0 text-base md:text-lg text-white/80"
-            >
-              Pick a template, tune colors and type, drop in the countdown, and export. No odd dependencies. No build hoops. One file — done.
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease: "easeOut", delay: 0.15 }}
-              className="mt-8 flex flex-col sm:flex-row gap-3 justify-center lg:justify-start"
-            >
-              <a
-                href="#builder"
-                className="inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm md:text-base font-semibold bg-white text-[#0b0812] hover:opacity-95 active:opacity-90 shadow-[0_10px_30px_-10px_rgba(255,255,255,0.5)]"
+        <div className="relative z-10 w-full max-w-7xl">
+          <div className="grid lg:grid-cols-[1.05fr,0.95fr] gap-10 items-center">
+            {/* Copy & CTAs */}
+            <div className="text-center lg:text-left">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs md:text-sm backdrop-blur-sm"
               >
-                🚀 Start building
-              </a>
-              <a
-                href="#templates"
-                className="inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm md:text-base font-semibold border border-white/20 bg-white/5 backdrop-blur hover:bg-white/10"
-              >
-                🎨 Browse templates
-              </a>
-            </motion.div>
+                <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="opacity-80">Exports a single, upload‑ready HTML file</span>
+              </motion.div>
 
-            {/* Value bullets */}
-            <motion.ul
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease: "easeOut", delay: 0.2 }}
-              className="mt-6 grid sm:grid-cols-2 gap-3 text-sm text-white/80"
-            >
-              {[
-                "Responsive by default",
-                "Live preview & theming",
-                "Built-in countdown & mailing list",
-                "SEO & OpenGraph baked in",
-              ].map((t) => (
-                <li
-                  key={t}
-                  className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 backdrop-blur-sm"
+              <motion.h1
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, ease: "easeOut", delay: 0.05 }}
+                className="mt-5 text-[clamp(2rem,7vw,4.25rem)] md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight"
+              >
+                <span className="bg-gradient-to-br from-white via-white to-white/60 bg-clip-text text-transparent">
+                  CR•ForgeSite
+                </span>
+                <br />
+                <span className="bg-[conic-gradient(at_10%_10%,#e879f9_0deg,#22d3ee_120deg,#34d399_240deg,#e879f9_360deg)] bg-clip-text text-transparent">
+                  Build stunning Coming Soon pages in minutes
+                </span>
+              </motion.h1>
+
+              <motion.p
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, ease: "easeOut", delay: 0.1 }}
+                className="mt-6 max-w-2xl mx-auto lg:mx-0 text-base md:text-lg text-white/80"
+              >
+                Pick a template, tune colors and type, drop in the countdown, and export. No odd dependencies. No build hoops. One file — done.
+              </motion.p>
+
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, ease: "easeOut", delay: 0.15 }}
+                className="mt-8 flex flex-col sm:flex-row gap-3 justify-center lg:justify-start"
+              >
+                <a
+                  href="#builder"
+                  className="group inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm md:text-base font-semibold bg-white text-[#0b0812] hover:opacity-95 active:opacity-90 shadow-[0_10px_30px_-10px_rgba(255,255,255,0.5)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white/80 focus-visible:ring-offset-[#0b0812]"
                 >
-                  <span className="i">✓</span>
-                  <span>{t}</span>
-                </li>
-              ))}
-            </motion.ul>
-          </div>
+                  🚀 Start building
+                  <span className="transition-transform group-hover:translate-x-0.5">→</span>
+                </a>
+                <a
+                  href="#templates"
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm md:text-base font-semibold border border-white/20 bg-white/5 backdrop-blur hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white/50 focus-visible:ring-offset-[#0b0812]"
+                >
+                  🎨 Browse templates
+                </a>
+              </motion.div>
 
-          {/* Preview panel */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.98, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
-            className="relative"
-          >
-            <div className="relative rounded-3xl border border-white/10 bg-white/[0.04] p-3 md:p-4 backdrop-blur-xl shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)]">
-              <BrowserTopBar />
-              <MockPreview />
-              <div className="absolute inset-0 rounded-3xl ring-1 ring-inset ring-white/10 pointer-events-none" />
+              {/* Value bullets */}
+              <motion.ul
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, ease: "easeOut", delay: 0.2 }}
+                className="mt-6 grid sm:grid-cols-2 gap-3 text-sm text-white/80"
+              >
+                {[
+                  "Responsive by default",
+                  "Live preview & theming",
+                  "Built‑in countdown & mailing list",
+                  "SEO & OpenGraph baked in",
+                ].map((t) => (
+                  <li
+                    key={t}
+                    className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 backdrop-blur-sm"
+                  >
+                    <span aria-hidden className="h-4 w-4 grid place-items-center rounded-full bg-emerald-400/20 text-emerald-300">✓</span>
+                    <span>{t}</span>
+                  </li>
+                ))}
+              </motion.ul>
+
+              {/* Keyboard hint */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="mt-4 inline-flex items-center gap-2 text-xs text-white/60"
+              >
+                <kbd className="rounded-md border border-white/15 bg-white/5 px-2 py-1">/</kbd>
+                <span>Quick search in templates</span>
+              </motion.div>
             </div>
-            {/* floating card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.25 }}
-              className="absolute -bottom-6 -right-2 md:-right-6"
-            >
-              <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-xl">
-                <p className="text-xs md:text-sm text-white/90 font-medium">
-                  1‑click export · No build step
-                </p>
+
+            {/* Preview panel with tilt */}
+            <TiltCard disabled={isCoarse}>
+              <div className="relative rounded-3xl border border-white/10 bg-white/[0.04] p-2 sm:p-3 md:p-4 backdrop-blur-xl shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)]">
+                <BrowserTopBar />
+                <MockPreview />
+                <div className="absolute inset-0 rounded-3xl ring-1 ring-inset ring-white/10 pointer-events-none" />
               </div>
-            </motion.div>
-          </motion.div>
+              {/* floating card */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.25 }}
+                className="absolute -bottom-6 -right-2 md:-right-6"
+              >
+                <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-xl">
+                  <p className="text-xs md:text-sm text-white/90 font-medium">
+                    1‑click export · No build step
+                  </p>
+                </div>
+              </motion.div>
+            </TiltCard>
+          </div>
         </div>
+
+        {/* grain texture */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.05] mix-blend-overlay motion-reduce:hidden"
+          style={{ backgroundImage: "url('data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 100 100\\'><filter id=\\'n\\'><feTurbulence type=\\'fractalNoise\\' baseFrequency=\\'0.8\\' numOctaves=\\'4\\'/></filter><rect width=\\'100%\\' height=\\'100%\\' filter=\\'url(%23n)\\' opacity=\\'0.3\\'/></svg>')" }}
+        />
+      </section>
+
+      {/* BUILDER MOUNT POINT — keeps the base app working */}
+      <section id="builder" className="relative px-4 sm:px-6 md:px-12 lg:px-16 py-8 md:py-16 bg-[#0b0812]">
+        <div className="mx-auto max-w-7xl">
+          {Generator ? (
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-3 sm:p-4 md:p-6 backdrop-blur-xl">
+              <Generator />
+            </div>
+          ) : (
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-white/70 text-sm">
+              <p>
+                <strong>Generator not provided.</strong> Import your generator component in the parent and pass it to <code>{`<Hero Generator={Generator} />`}</code>.
+              </p>
+            </div>
+          )}
+        </div>
+        {/* Anchor for templates CTA if page provides it */}
+        <div id="templates" className="sr-only" />
+      </section>
+
+      {/* Sticky mobile CTA */}
+      <div className="lg:hidden fixed bottom-3 left-0 right-0 z-30 px-3 [padding-bottom:env(safe-area-inset-bottom,0px)]">
+        <a href="#builder" className="block text-center rounded-2xl bg-white text-[#0b0812] font-semibold py-3 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b0812]/20">
+          🚀 Start building
+        </a>
       </div>
-    </section>
+    </>
   );
 }
 
@@ -165,6 +214,9 @@ function BackgroundDecor() {
             "radial-gradient(60% 60% at 50% 40%, black, transparent 70%)",
         }}
       />
+
+      {/* accent ring */}
+      <div className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[120vmax] w-[120vmax] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/5 [mask-image:radial-gradient(closest-side,black,transparent)]" />
     </>
   );
 }
@@ -226,5 +278,31 @@ function MockPreview() {
         ))}
       </div>
     </div>
+  );
+}
+
+function TiltCard({ children, disabled = false }: { children: React.ReactNode; disabled?: boolean }) {
+  // simple pointer‑based tilt without external deps
+  const cx = useMotionValue(0.5);
+  const cy = useMotionValue(0.5);
+  const rotateX = useTransform(cy, [0, 1], [12, -12]);
+  const rotateY = useTransform(cx, [0, 1], [-12, 12]);
+
+  if (disabled) {
+    return <div className="relative">{children}</div>;
+  }
+
+  return (
+    <motion.div
+      onMouseMove={(e) => {
+        const r = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+        cx.set((e.clientX - r.left) / r.width);
+        cy.set((e.clientY - r.top) / r.height);
+      }}
+      style={{ rotateX, rotateY, perspective: 1000 }}
+      className="relative motion-reduce:transform-none"
+    >
+      {children}
+    </motion.div>
   );
 }
