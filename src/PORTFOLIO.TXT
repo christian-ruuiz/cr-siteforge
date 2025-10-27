@@ -1,0 +1,838 @@
+import { useEffect, useRef, useState } from "react";
+import { ArrowUpRight, ChevronRight, Github, Mail, Instagram, ExternalLink, X, Loader2, Check, AlertTriangle, CalendarDays } from "lucide-react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { ScrollToPlugin } from "gsap/ScrollToPlugin";
+
+// =========================================================
+// Portfolio React + GSAP — Versión pro (TS Safe)
+// Enfoque freelance (Christian Ruiz). Código tipado y build de Vite/TS sin errores.
+// Cambios clave:
+// - Copy más "desarrollador/diseñador web freelance".
+// - Stack de tecnologías en grid (no carrusel) + más techs.
+// - Animaciones extra: partículas de fondo, hover 3D, reveals, parallax.
+// - Nuevo proyecto: Novaura (https://novaura.es).
+// - Mantiene Webhook Discord, GitHub e Instagram.
+// =========================================================
+
+// ================== Ajustes generales ==================
+const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1431632445039579158/4kSLtHgmy1ZE3XiLdtfPfdnvP7p2eJR_97Xp8FE7nWJ7teU24YHAlinQapnswaQ8oYQS" as const;
+
+// -------------------- Types --------------------
+type FormValues = {
+  nombre: string;
+  email: string;
+  empresa: string;
+  tipo: string;
+  presupuesto: string;
+  plazo: string;
+  objetivos: string;
+  mensaje: string;
+};
+
+type Step = {
+  key: keyof FormValues;
+  label: string;
+  type: 'text' | 'email' | 'select' | 'textarea';
+  required?: boolean;
+  placeholder?: string;
+  options?: string[];
+};
+
+type ProjectStep = { title: string; desc: string };
+
+type Project = {
+  title: string;
+  excerpt: string;
+  link?: string;
+  preview?: string;
+  github?: string | null;
+  techs: string[];
+  steps: ProjectStep[];
+};
+
+// -------------------- Helpers entorno & motion --------------------
+const isBrowser = () => typeof window !== 'undefined';
+const isDev = () => Boolean((import.meta as any).env?.DEV);
+const prefersReduced = () => isBrowser() && !!window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// Registro seguro de GSAP + plugins, una sola vez.
+function ensureGSAP() {
+  if (!(ensureGSAP as any)._done) {
+    try { gsap.registerPlugin(ScrollTrigger, ScrollToPlugin); } catch { try { gsap.registerPlugin(ScrollTrigger); } catch {} }
+    ;(ensureGSAP as any)._done = true;
+  }
+  return !!gsap;
+}
+(ensureGSAP as any)._done = false;
+
+// Scroll suave con fallback si no hay ScrollToPlugin
+function smoothScrollTo(target: Element, offset = 72) {
+  ensureGSAP();
+  if (!isBrowser() || !target) return;
+  // @ts-ignore: window es un TweenTarget válido para gsap
+  gsap.to(window as any, { duration: 0.9, scrollTo: { y: target, offsetY: offset }, ease: 'power2.out' });
+}
+
+// Utilidad: enviar a Discord con varios fallbacks por CORS
+async function sendDiscordEmbed(embedPayload: any): Promise<{ ok: boolean; opaque?: boolean; beacon?: boolean; error?: any }>{
+  const body = { username: "Portfolio Form", embeds: [embedPayload] };
+  try {
+    const res = await fetch(DISCORD_WEBHOOK, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error('Discord response not OK');
+    return { ok: true };
+  } catch (err) {
+    try {
+      await fetch(DISCORD_WEBHOOK, { method: 'POST', mode: 'no-cors', body: JSON.stringify(body) });
+      console.warn('[Discord] Enviado en modo no-cors (respuesta opaca).');
+      return { ok: true, opaque: true };
+    } catch (e2) {
+      if (typeof navigator !== 'undefined' && 'sendBeacon' in navigator) {
+        const blob = new Blob([JSON.stringify(body)], { type: 'application/json' });
+        const ok = (navigator as any).sendBeacon(DISCORD_WEBHOOK, blob);
+        return { ok, beacon: true };
+      }
+      console.error('[Discord] Error enviando webhook:', e2);
+      return { ok: false, error: e2 };
+    }
+  }
+}
+
+// ================== Hooks de animación ==================
+const useParallax = (ref: React.RefObject<HTMLElement>, { y = 16, start = "top bottom", end = "bottom top" } = {}) => {
+  useEffect(() => {
+    if (!ref.current || !isBrowser() || prefersReduced()) return;
+    ensureGSAP();
+    gsap.to(ref.current, { yPercent: y, ease: "none", scrollTrigger: { trigger: ref.current, start, end, scrub: true } });
+  }, [ref, y, start, end]);
+};
+
+const useReveal = (selector: string, opts: gsap.TweenVars = {}) => {
+  useEffect(() => {
+    if (!isBrowser()) return;
+    ensureGSAP();
+    (gsap.utils.toArray(selector) as HTMLElement[]).forEach((el) => {
+      const from = prefersReduced() ? { opacity: 0 } : { y: 28, opacity: 0, scale: 0.98, filter: 'blur(4px)' };
+      const to = prefersReduced() ? { opacity: 1, duration: 0.3 } : { y: 0, opacity: 1, scale: 1, filter: 'blur(0px)', duration: 0.9, ease: "power3.out" };
+      gsap.fromTo(el, from as any, { ...(to as any), scrollTrigger: { trigger: el, start: "top 85%" }, ...opts });
+    });
+  }, [selector]);
+};
+
+// Hover tilt para tarjetas con clase .kinetic
+function enhanceKineticCards() {
+  if (!isBrowser() || prefersReduced()) return;
+  const cards = document.querySelectorAll<HTMLElement>('.kinetic');
+  cards.forEach((card) => {
+    const onMove = (e: MouseEvent) => {
+      const r = card.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width - 0.5;
+      const y = (e.clientY - r.top) / r.height - 0.5;
+      gsap.to(card, { rotationY: x * 8, rotationX: -y * 8, transformPerspective: 800, transformOrigin: 'center', duration: 0.4, ease: 'power3' });
+    };
+    const onLeave = () => gsap.to(card, { rotationY: 0, rotationX: 0, duration: 0.6, ease: 'power3' });
+    card.addEventListener('mousemove', onMove);
+    card.addEventListener('mouseleave', onLeave);
+  });
+}
+
+// -------------------- Magnetic Button --------------------
+const Magnetic: React.FC<any> = ({ children, className = "", as: As = "button", ...props }) => {
+  const ref = useRef<any>(null);
+  useEffect(() => {
+    const el = ref.current; if (!el || !isBrowser() || prefersReduced()) return;
+    const onMove = (e: MouseEvent) => { const r = el.getBoundingClientRect(); const x = e.clientX - (r.left + r.width / 2); const y = e.clientY - (r.top + r.height / 2); gsap.to(el, { x: x * 0.2, y: y * 0.2, duration: 0.3, ease: "power3" }); };
+    const onLeave = () => gsap.to(el, { x: 0, y: 0, duration: 0.5, ease: "power3" });
+    el.addEventListener("mousemove", onMove); el.addEventListener("mouseleave", onLeave);
+    return () => { el.removeEventListener("mousemove", onMove); el.removeEventListener("mouseleave", onLeave); };
+  }, []);
+  return (<As ref={ref} className={className} {...props}>{children}</As>);
+};
+
+// -------------------- Cursor & Grain --------------------
+const Cursor: React.FC = () => {
+  const ref = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!isBrowser()) return; const el = ref.current; if (!el) return;
+    gsap.set(el, { xPercent: -50, yPercent: -50 });
+    const move = (e: MouseEvent) => gsap.to(el, { x: e.clientX, y: e.clientY, duration: 0.25, ease: "power2.out" });
+    window.addEventListener("mousemove", move); return () => window.removeEventListener("mousemove", move);
+  }, []);
+  return <div ref={ref} className="pointer-events-none fixed z-[60] top-0 left-0 h-6 w-6 rounded-full mix-blend-difference bg-white/90"/>;
+};
+
+const Grain: React.FC = () => {
+  const svg = encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="140" height="140" viewBox="0 0 140 140"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(#n)" opacity="0.4"/></svg>`);
+  return (
+    <div
+      className="pointer-events-none fixed inset-0 z-[5] opacity-[.08]"
+      style={{ backgroundImage: `url("data:image/svg+xml;utf8,${svg}")` }}
+    />
+  );
+};
+
+// -------------------- Canvas FX (background suave) --------------------
+const ParticlesCanvas: React.FC = () => {
+  const ref = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    if (!isBrowser() || prefersReduced()) return;
+    const canvas = ref.current; if (!canvas) return; const ctx = canvas.getContext('2d'); if (!ctx) return;
+    let w = canvas.width = window.innerWidth; let h = canvas.height = window.innerHeight;
+    const setSize = () => { const dpr = Math.min(window.devicePixelRatio || 1, 2); canvas.width = w * dpr; canvas.height = h * dpr; canvas.style.width = w + 'px'; canvas.style.height = h + 'px'; ctx.setTransform(dpr,0,0,dpr,0,0); };
+    const onResize = () => { w = window.innerWidth; h = window.innerHeight; setSize(); };
+    setSize();
+
+    const COUNT = Math.min(140, Math.floor((w*h)/22000));
+    const pts = Array.from({length: COUNT}, () => ({ x: Math.random()*w, y: Math.random()*h, vx: (Math.random()-0.5)*0.4, vy: (Math.random()-0.5)*0.4, r: 1 + Math.random()*1.1 }));
+    let mouse = { x: w/2, y: h/2, active:false } as {x:number;y:number;active:boolean};
+
+    const onMove = (e: MouseEvent) => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.active=true; };
+    const onLeave = () => { mouse.active=false; };
+
+    window.addEventListener('resize', onResize);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseleave', onLeave);
+
+    let raf = 0;
+    const draw = () => {
+      ctx.clearRect(0,0,w,h);
+      // update
+      for (const p of pts) {
+        p.x += p.vx; p.y += p.vy;
+        if (mouse.active){ const dx=p.x-mouse.x, dy=p.y-mouse.y; const d = Math.hypot(dx,dy); if (d<140){ p.vx -= (dx/d)*0.004; p.vy -= (dy/d)*0.004; } }
+        if (p.x < 0 || p.x > w) p.vx *= -1;
+        if (p.y < 0 || p.y > h) p.vy *= -1;
+      }
+      // connections
+      for (let i=0;i<pts.length;i++){
+        const a = pts[i];
+        for (let j=i+1;j<pts.length;j++){
+          const b = pts[j];
+          const dx = a.x-b.x, dy = a.y-b.y; const d = Math.hypot(dx,dy);
+          if (d < 120) { ctx.globalAlpha = 1 - d/120; ctx.strokeStyle = 'rgba(99,102,241,0.55)'; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }
+        }
+      }
+      // dots
+      ctx.globalAlpha = 1; ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      for (const p of pts) { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill(); }
+      raf = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', onResize); window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseleave', onLeave); };
+  }, []);
+  return <canvas ref={ref} className="pointer-events-none fixed inset-0 -z-[1] opacity-[.18]"/>;
+};
+
+// -------------------- Tech Icons --------------------
+const TechIcon: React.FC<{ name: string; className?: string }> = ({ name, className = "h-6 w-6" }) => {
+  const common = "fill-current";
+  switch (String(name).toLowerCase()) {
+    case 'react':
+      return (<svg viewBox="0 0 256 256" className={`${className} text-cyan-400`} aria-label="React"><g><circle cx="128" cy="128" r="12" className={common}/><g fill="none" stroke="currentColor" strokeWidth="12"><ellipse rx="84" ry="32" cx="128" cy="128"/><ellipse rx="84" ry="32" cx="128" cy="128" transform="rotate(60 128 128)"/><ellipse rx="84" ry="32" cx="128" cy="128" transform="rotate(120 128 128)"/></g></g></svg>);
+    case 'next.js':
+    case 'next':
+      return (<svg viewBox="0 0 180 180" className={`${className} text-white`} aria-label="Next.js"><path fill="currentColor" d="M90 0a90 90 0 100 180 90 90 0 000-180zm28.5 130.5L76 63h-8v54h8V76l43 60.5h-0.5zM121 63h8v54h-8z"/></svg>);
+    case 'tailwind':
+    case 'tailwindcss':
+      return (<svg viewBox="0 0 256 154" className={`${className} text-sky-400`} aria-label="Tailwind"><path fill="currentColor" d="M128 0c-34 0-56.7 17-67 51 13.3-17 28.7-23 46-18 10.1 2.8 17.3 10.2 25 18 12.9 13.1 27.3 27 58 27 34 0 56.7-17 67-51-13.3 17-28.7 23-46 18-10.1 2.8-17.3-10.2-25-18C173.1 14.9 158.7 1 128 1zm-67 51C27 51 4.3 68  0 102c13.3-17 28.7-23 46-18 10.1 2.8 17.3 10.2 25 18 12.9 13.1 27.3 27 58 27 34 0 56.7-17 67-51-13.3 17-28.7 23-46 18-10.1 2.8-17.3-10.2-25-18-12.9-13.1-27.3-27-58-27z"/></svg>);
+    case 'typescript':
+      return (<svg viewBox="0 0 256 256" className={`${className} text-blue-400`} aria-label="TypeScript"><rect width="256" height="256" rx="24" fill="currentColor"/><path fill="#0B0B0E" d="M116 92h24v88h-24zm-44 24h88v20H140v44h-24v-44H72zM172 92h24v88h-24l-28-35v-18z"/></svg>);
+    case 'vite':
+      return (<svg viewBox="0 0 256 257" className={`${className} text-yellow-400`} aria-label="Vite"><path fill="currentColor" d="M255.2 36.3L134.9 250.2a8 8 0 01-13.9 0L.8 36.3a8 8 0 016.9-11.9h240.6a8 8 0 016.9 11.9z"/></svg>);
+    case 'astro':
+      return (<svg viewBox="0 0 256 256" className={`${className} text-orange-400`} aria-label="Astro"><path fill="currentColor" d="M128 16l64 192-64-32-64 32 64-192zM64 224c16-16 40-24 64-24s48 8 64 24c-24-8-40-12-64-12s-40 4-64 12z"/></svg>);
+    case 'gsap':
+      return (<svg viewBox="0 0 256 256" className={`${className} text-lime-400`} aria-label="GSAP"><circle cx="128" cy="128" r="120" fill="currentColor"/><path fill="#0B0B0E" d="M164 156c-10 10-24 16-36 16-28 0-52-24-52-52s24-52 52-52c22 0 36 8 48 24l-20 12c-6-8-16-12-28-12-16 0-28 12-28 28s12 28 28 28c10 0 18-4 24-10v-10h-24v-20h44v48z"/></svg>);
+    case 'figma':
+      return (<svg viewBox="0 0 256 256" className={`${className} text-pink-400`} aria-label="Figma"><path fill="currentColor" d="M96 24h32a32 32 0 010 64H96V24zm0 72h32a32 32 0 010 64H96V96zm0 72h16a32 32 0 110 64 32 32 0 01-32-32v-16h16zm48-72h16a32 32 0 100-64h-16v64zm0 8h16a32 32 0 110 64h-16V128z"/></svg>);
+    case 'framer motion':
+    case 'framer':
+      return (<svg viewBox="0 0 256 256" className={`${className} text-white`} aria-label="Framer"><path fill="currentColor" d="M64 24h128v64H128L64 24zm0 64h64l64 64H64V88zm0 64h128v64L128 152H64z"/></svg>);
+    case 'shopify':
+      return (<svg viewBox="0 0 256 256" className={`${className} text-emerald-400`} aria-label="Shopify"><path fill="currentColor" d="M208 48l-24 8-8-24-88 24L48 72l24 136 88 24 56-16V48z"/></svg>);
+    case 'wordpress':
+      return (<svg viewBox="0 0 256 256" className={`${className} text-sky-300`} aria-label="WordPress"><circle cx="128" cy="128" r="116" fill="none" stroke="currentColor" strokeWidth="16"/><path fill="currentColor" d="M180 200L144 96h-16l-18 48 30 80"/></svg>);
+    case 'supabase':
+      return (<svg viewBox="0 0 256 256" className={`${className} text-emerald-400`} aria-label="Supabase"><path fill="currentColor" d="M48 208l80-144h80l-80 144H48z"/></svg>);
+    case 'radix ui':
+      return (<svg viewBox="0 0 256 256" className={`${className} text-white`} aria-label="Radix UI"><rect width="96" height="96" x="32" y="32" fill="currentColor"/><rect width="96" height="96" x="128" y="128" fill="currentColor"/></svg>);
+    case 'shadcn/ui':
+      return (<svg viewBox="0 0 256 256" className={`${className} text-white`} aria-label="shadcn/ui"><circle cx="96" cy="96" r="48" fill="currentColor"/><rect x="120" y="120" width="112" height="112" fill="currentColor"/></svg>);
+    default:
+      return <div className={`${className} rounded bg-white/10`} aria-label={name} />;
+  }
+};
+
+const TechPill: React.FC<{ name: string }> = ({ name }) => (
+  <span className="tech-pill inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] bg-white/5 border border-white/10">
+    <TechIcon name={name} className="h-[18px] w-[18px]" />{name}
+  </span>
+);
+
+// ================== Tech Stack (Grid, sin carrusel) ==================
+const TECHS: string[] = [
+  'React','Next.js','TypeScript','Tailwind','GSAP','Framer Motion',
+  'WordPress','Shopify','Vite','Astro','Radix UI','shadcn/ui',
+  'Figma','Framer','Supabase'
+];
+
+const TechStack: React.FC = () => {
+  useReveal('#techstack .tech-pill', { stagger: 0.05 });
+  return (
+    <section id="techstack" className="mx-auto px-4 mt-12" style={{maxWidth:'min(1280px,92vw)'}}>
+      <div className="rounded-2xl border border-white/10 bg-white/[.03] p-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          {TECHS.map(t => (<TechPill key={t} name={t} />))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ================== Formulario Modal (Multi-step) ==================
+const MultiStepForm: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
+  const [step, setStep] = useState<number>(0);
+  const [sending, setSending] = useState<boolean>(false);
+  const [sent, setSent] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [values, setValues] = useState<FormValues>({
+    nombre: "",
+    email: "",
+    empresa: "",
+    tipo: "Web corporativa",
+    presupuesto: "",
+    plazo: "",
+    objetivos: "",
+    mensaje: "",
+  });
+
+  const STEPS: Step[] = [
+    { key: 'nombre', label: '¿Cómo te llamas?', type: 'text', required: true, placeholder: 'Tu nombre' },
+    { key: 'email', label: '¿Cuál es tu email?', type: 'email', required: true, placeholder: 'tu@email.com' },
+    { key: 'empresa', label: '¿Empresa o marca?', type: 'text', required: false, placeholder: 'Opcional' },
+    { key: 'tipo', label: '¿Qué necesitas?', type: 'select', options: ['Web corporativa','Landing de campaña','Ecommerce','Portfolio','Rediseño','Otra'], required: true },
+    { key: 'presupuesto', label: 'Rango de presupuesto (EUR)', type: 'select', options: ['< 200','201 - 600','601 – 1.000','1.001 – 1.500','> 1.501'], required: true },
+    { key: 'plazo', label: '¿Para cuándo?', type: 'select', options: ['Urgente (< 2 semanas)','1 mes','2-3 meses','Flexible'], required: true },
+    { key: 'objetivos', label: 'Objetivos principales', type: 'textarea', required: true, placeholder: 'Ventas, leads, credibilidad, etc.' },
+    { key: 'mensaje', label: 'Cuéntame algo más', type: 'textarea', required: false, placeholder: 'Detalles relevantes' },
+  ];
+
+  useEffect(() => {
+    if (!open) return; setSent(false); setError(null); setSending(false); setStep(0);
+  }, [open]);
+
+  const canNext = () => {
+    const current = STEPS[step]; if (!current) return false;
+    const { key, required } = current;
+    if (!required) return true;
+    const v = String(values[key] || '').trim();
+    if (current.type === 'email') return /.+@.+\..+/.test(v);
+    return v.length > 0;
+  };
+
+  const onChange = (key: keyof FormValues, v: string) => setValues(prev => ({ ...prev, [key]: v }));
+
+  const submit = async () => {
+    setSending(true); setError(null);
+    const embed = {
+      title: 'Nuevo brief — Christian Ruiz (Freelance)',
+      color: 5814783,
+      fields: [
+        { name: 'Nombre', value: values.nombre || '—', inline: true },
+        { name: 'Email', value: values.email || '—', inline: true },
+        { name: 'Empresa', value: values.empresa || '—', inline: true },
+        { name: 'Tipo', value: values.tipo || '—', inline: true },
+        { name: 'Presupuesto', value: values.presupuesto || '—', inline: true },
+        { name: 'Plazo', value: values.plazo || '—', inline: true },
+        { name: 'Objetivos', value: values.objetivos || '—' },
+        { name: 'Mensaje', value: values.mensaje || '—' },
+      ],
+      footer: { text: 'Portfolio Web • ' + new Date().toLocaleString() }
+    };
+
+    const res = await sendDiscordEmbed(embed);
+    setSending(false);
+    if (res.ok) { setSent(true); } else { setError('No se pudo enviar. Revisa la consola.'); }
+  };
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[70]">
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <div role="dialog" aria-modal="true" className="absolute inset-x-2 sm:inset-x-auto sm:right-6 top-10 sm:top-16 bottom-6 sm:bottom-16 max-w-[min(720px,100vw-3rem)] sm:w-[720px] mx-auto rounded-3xl bg-[#101015] border border-white/10 shadow-2xl overflow-hidden flex flex-col">
+        <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
+          <h3 className="text-lg font-semibold">Brief rápido</h3>
+          <button onClick={onClose} className="h-9 w-9 grid place-items-center rounded-lg bg-white/5 hover:bg-white/10"><X size={16}/></button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6">
+          {!sent ? (
+            <div className="space-y-6">
+              <div>
+                <div className="text-xs text-zinc-400 mb-1">Paso {step + 1} de {STEPS.length}</div>
+                <div className="text-xl font-medium">{STEPS[step]?.label}</div>
+              </div>
+
+              <div>
+                {['text','email'].includes(STEPS[step]?.type || '') ? (
+                  <input type={STEPS[step]!.type} value={values[STEPS[step]!.key]} onChange={(e) => onChange(STEPS[step]!.key, e.target.value)} placeholder={STEPS[step]?.placeholder || ''} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                ) : STEPS[step]?.type === 'select' ? (
+                  <select value={values[STEPS[step]!.key]} onChange={(e) => onChange(STEPS[step]!.key, e.target.value)} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    {STEPS[step]?.options?.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                ) : (
+                  <textarea value={values[STEPS[step]!.key]} onChange={(e) => onChange(STEPS[step]!.key, e.target.value)} placeholder={STEPS[step]?.placeholder || ''} rows={5} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                )}
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <button onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0 || sending} className="px-4 py-2 rounded-xl border border-white/10 hover:bg-white/5 disabled:opacity-40">Atrás</button>
+                {step < STEPS.length - 1 ? (
+                  <button onClick={() => canNext() && setStep((s) => s + 1)} disabled={!canNext() || sending} className="px-5 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 disabled:opacity-40 inline-flex items-center gap-2">Siguiente <ChevronRight size={16}/></button>
+                ) : (
+                  <button onClick={submit} disabled={!canNext() || sending} className="px-5 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 disabled:opacity-40 inline-flex items-center gap-2">{sending ? (<><Loader2 className="animate-spin" size={16}/> Enviando</>) : 'Enviar'}</button>
+                )}
+              </div>
+
+              {error && (
+                <div className="flex items-center gap-2 text-amber-300"><AlertTriangle size={16}/> {error}</div>
+              )}
+
+              <div className="text-xs text-zinc-500">
+                *Tus datos se envían como embed a un canal privado de Discord. Puede usarse modo <code>no-cors</code> en algunos navegadores (respuesta opaca).
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="mx-auto h-12 w-12 rounded-full bg-emerald-500/20 grid place-items-center"><Check className="text-emerald-400"/></div>
+              <h4 className="text-2xl font-semibold mt-4">¡Enviado!</h4>
+              <p className="text-zinc-300 mt-2">Gracias por el brief. Te responderé pronto.</p>
+              <button onClick={onClose} className="mt-6 px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20">Cerrar</button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ================== Layout & Hero ==================
+const Nav: React.FC<{ onOpenForm: () => void }> = ({ onOpenForm }) => (
+  <header className="fixed top-0 inset-x-0 z-50 backdrop-blur border-b border-white/10 bg-black/30">
+    <nav className="mx-auto px-4 h-16 flex items-center justify-between w-full" style={{maxWidth:'min(1280px,92vw)'}}>
+      <a href="#top" className="flex items-center gap-2">
+        <div className="h-7 w-7 rounded-lg bg-white/10 grid place-items-center"><span className="text-xs">✦</span></div>
+        <span className="font-semibold tracking-tight">Christian Ruiz</span>
+      </a>
+      <ul className="hidden md:flex items-center gap-6 text-sm text-zinc-300">
+        <li><a className="navlink hover:text-white" data-target="#servicios" href="#servicios">Servicios</a></li>
+        <li><a className="navlink hover:text-white" data-target="#trabajos" href="#trabajos">Proyectos</a></li>
+        <li><a className="navlink hover:text-white" data-target="#manifiesto" href="#manifiesto">Manifiesto</a></li>
+        <li><button onClick={onOpenForm} className="navlink hover:text-white">Brief</button></li>
+      </ul>
+      <div className="flex items-center gap-2">
+        <a href="https://github.com/christian-ruuizchristian-ruuiz" target="_blank" rel="noreferrer" className="px-3 h-9 grid place-items-center rounded-xl border border-white/10 hover:bg-white/5"><Github size={16}/></a>
+        <a href="https://www.instagram.com/christian.ruuiz" target="_blank" rel="noreferrer" className="px-3 h-9 grid place-items-center rounded-xl border border-white/10 hover:bg-white/5"><Instagram size={16}/></a>
+        <Magnetic as="button" onClick={onOpenForm} className="px-4 py-2 rounded-2xl bg-white/10 hover:bg-white/20 text-sm inline-block">Hablemos</Magnetic>
+      </div>
+    </nav>
+  </header>
+);
+
+const Hero: React.FC = () => {
+  const root = useRef<HTMLElement | null>(null); const glowBack = useRef<HTMLDivElement | null>(null); const glowFront = useRef<HTMLDivElement | null>(null);
+  useParallax(glowBack as any, { y: 8 }); useParallax(glowFront as any, { y: -8 });
+
+  useEffect(() => {
+    ensureGSAP();
+    const links = Array.from(document.querySelectorAll('a[href^="#"]')) as HTMLAnchorElement[];
+    const onClick = (e: Event) => { const href = (e.currentTarget as HTMLAnchorElement).getAttribute('href'); if (!href || href.length < 2) return; const target = document.querySelector(href); if (!target) return; e.preventDefault(); smoothScrollTo(target, 72); };
+    links.forEach(l => l.addEventListener('click', onClick)); return () => links.forEach(l => l.removeEventListener('click', onClick));
+  }, []);
+
+  return (
+    <section ref={root as any} id="top" className="relative overflow-hidden pt-28 pb-20">
+      <div ref={glowBack} className="pointer-events-none absolute inset-0 -z-10"><div className="absolute -top-64 left-1/2 -translate-x-1/2 h-[720px] w-[1200px] rounded-full blur-3xl opacity-30 bg-[radial-gradient(60%_60%_at_50%_0%,rgba(99,102,241,0.35),transparent)]" /></div>
+      <div ref={glowFront} className="pointer-events-none absolute inset-0 -z-10"><div className="absolute top-32 right-[-10%] h-[360px] w-[360px] rounded-full blur-2xl opacity-40 bg-[conic-gradient(from_90deg,rgba(255,255,255,.1),rgba(99,102,241,.35))]" /></div>
+
+      <div className="mx-auto px-4" style={{maxWidth:'min(1280px,92vw)'}}>
+        <div className="flex items-center gap-2 text-xs text-zinc-400">
+          <CalendarDays size={14}/> <span>Freelance disponible </span>
+        </div>
+        <h1 className="hero-title [font-size:clamp(36px,9.5vw,72px)] leading-[0.95] font-bold tracking-[-0.02em] mt-3">
+          Diseñador & desarrollador web <span className="text-indigo-400">freelance</span> para marcas que quieren vender más.
+        </h1>
+        <p className="hero-sub text-zinc-300 mt-6 text-base md:text-xl max-w-3xl">
+          Soy <strong>Christian Ruiz</strong>, diseñador y desarrollador web. Construyo productos rápidos, medibles y con impacto: React/Next.js, Tailwind, animaciones GSAP/Framer y SEO técnico. Menos humo, más negocio.
+        </p>
+        <div className="hero-cta mt-8 flex flex-wrap items-center gap-4">
+          <Magnetic as="a" href="#trabajos" className="px-6 py-3 rounded-2xl bg-indigo-500 hover:bg-indigo-600 transition font-medium inline-flex items-center gap-2">Ver proyectos <ChevronRight size={18} /></Magnetic>
+          <a href="#contacto" className="px-6 py-3 rounded-2xl border border-white/10 hover:bg-white/5 transition inline-flex items-center gap-2">Solicitar propuesta <ArrowUpRight size={18} /></a>
+        </div>
+      </div>
+
+      {/* Stack de tecnologías en grid */}
+      <TechStack />
+    </section>
+  );
+};
+
+// -------------------- Servicios --------------------
+const ServiceCard: React.FC<{ title: string; desc: string; icon: React.ReactNode }> = ({ title, desc, icon }) => (
+  <div className="kinetic card group rounded-3xl p-7 bg-white/[.04] border border-white/10 hover:border-white/20 transition relative overflow-hidden">
+    <div className="absolute -top-16 -right-16 h-40 w-40 rounded-full bg-indigo-500/10 blur-2xl group-hover:scale-125 transition" />
+    <div className="h-10 w-10 rounded-xl bg-white/10 grid place-items-center mb-4">{icon}</div>
+    <h3 className="text-xl font-semibold tracking-tight">{title}</h3>
+    <p className="text-zinc-300 mt-2 leading-relaxed">{desc}</p>
+  </div>
+);
+
+const Servicios: React.FC = () => {
+  useEffect(() => { enhanceKineticCards(); }, []);
+  useReveal("#servicios .card", { stagger: 0.08 });
+  return (
+    <section id="servicios" className="mx-auto px-4 py-20" style={{maxWidth:'min(1280px,92vw)'}}>
+      <div className="mb-10">
+        <p className="text-xs uppercase tracking-widest text-zinc-400">Diseño & desarrollo</p>
+        <h2 className="text-3xl md:text-5xl font-semibold">Sitios que combinan estética, rendimiento y conversión</h2>
+      </div>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <ServiceCard title="Landings y sitios que convierten" desc="Arquitectura, copy y diseño orientado a objetivos. Medición de funnels y pruebas A/B." icon={<span>◎</span>} />
+        <ServiceCard title="UI/UX de producto y sistemas" desc="Wireframes, design systems y componentes accesibles listos para producción." icon={<span>◇</span>} />
+        <ServiceCard title="Performance, SEO técnico y DX" desc="Core Web Vitals 90+, semántica y analítica; pipelines limpias para un desarrollo ágil." icon={<span>△</span>} />
+      </div>
+    </section>
+  );
+};
+
+// -------------------- Proyectos (Iframe preview + Sheet) --------------------
+const IframeCard: React.FC<{ project: Project; onOpen: (p: Project) => void }> = ({ project, onOpen }) => (
+  <button onClick={() => onOpen(project)} className="group text-left card block rounded-3xl overflow-hidden bg-white/[.04] border border-white/10 hover:border-white/20 transition shadow relative">
+    <div className="relative aspect-[16/10] overflow-hidden">
+      <iframe src={project.preview || project.link} title={`${project.title} preview`} loading="lazy" className="absolute inset-0 h-full w-full scale-[1.02] group-hover:scale-[1.05] transition will-change-transform" sandbox="allow-scripts allow-same-origin" scrolling="no" style={{ pointerEvents: 'none', border: '0', filter: 'saturate(0.9) contrast(0.95)' }} />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-black/15" />
+      {Array.isArray(project.techs) && project.techs.length > 0 && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+          <div className="flex flex-wrap items-center gap-3 px-5 py-4 backdrop-blur bg-black/40">
+            {project.techs.map((t) => (
+              <div key={t} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-sm">
+                <TechIcon name={t} className="h-5 w-5" />{t}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+    <div className="p-5">
+      <div className="flex items-center justify-between"><h3 className="text-xl font-semibold tracking-tight">{project.title}</h3><span className="text-xs text-zinc-400">Ver proceso →</span></div>
+      <p className="text-zinc-300 mt-2">{project.excerpt}</p>
+    </div>
+  </button>
+);
+
+const ProjectSheet: React.FC<{ project: Project | null; onClose: () => void }> = ({ project, onClose }) => {
+  const panel = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!project || !isBrowser()) return; ensureGSAP();
+    const tl = gsap.timeline(); tl.fromTo(panel.current, { xPercent: 100 }, { xPercent: 0, duration: 0.5, ease: "power3.out" });
+    return () => { gsap.to(panel.current, { xPercent: 100, duration: 0.4, ease: "power3.in" }); };
+  }, [project]);
+  if (!project) return null;
+  return (
+    <div className="fixed inset-0 z-50">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <aside ref={panel} className="absolute right-0 top-0 h-full w-full sm:w-[560px] bg-[#0F0F13] border-l border-white/10 overflow-y-auto">
+        <div className="p-5 border-b border-white/10 flex items-center justify-between sticky top-0 bg-[#0F0F13]/90 backdrop-blur z-10">
+          <h3 className="text-lg font-semibold">{project.title}</h3>
+          <button onClick={onClose} aria-label="Cerrar" className="h-9 w-9 grid place-items-center rounded-lg bg-white/5 hover:bg-white/10"><X size={16}/></button>
+        </div>
+        <div className="p-5 space-y-6">
+          {project.link && (
+            <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-white/10">
+              <iframe src={project.link} title={`${project.title} live`} className="absolute inset-0 w-full h-full" sandbox="allow-scripts allow-same-origin" />
+            </div>
+          )}
+          <p className="text-zinc-300">{project.excerpt}</p>
+          <div>
+            <h4 className="text-sm uppercase tracking-widest text-zinc-400 mb-2">Tecnologías</h4>
+            <div className="flex flex-wrap gap-2">
+              {Array.isArray(project.techs) && project.techs.map(t => (
+                <span key={t} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-sm"><TechIcon name={t} className="h-5 w-5" /> {t}</span>
+              ))}
+            </div>
+          </div>
+          <div>
+            <h4 className="text-sm uppercase tracking-widest text-zinc-400 mb-2">Proceso</h4>
+            <ol className="space-y-4">
+              {Array.isArray(project.steps) && project.steps.map((s, i) => (
+                <li key={i} className="rounded-xl p-4 bg-white/[.04] border border-white/10">
+                  <div className="text-xs text-zinc-400">Paso {i+1}</div>
+                  <div className="font-medium">{s.title}</div>
+                  <p className="text-zinc-300 mt-1 text-sm leading-relaxed">{s.desc}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            {project.github && (<a href={project.github} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 px-3 h-10 rounded-xl border border-white/10 hover:bg-white/5"><Github size={16}/> Código</a>)}
+            {project.link && (<a href={project.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 px-3 h-10 rounded-xl border border-white/10 hover:bg-white/5"><ExternalLink size={16}/> Web</a>)}
+            <a href="https://www.instagram.com/christian.ruuiz" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 px-3 h-10 rounded-xl border border-white/10 hover:bg-white/5"><Instagram size={16}/> Instagram</a>
+          </div>
+        </div>
+      </aside>
+    </div>
+  );
+};
+
+const PROJECTS: Project[] = [
+  {
+    title: "Dronecam.cat — Servicios aéreos",
+    excerpt: "Rediseño estratégico para mejorar percepción de marca y captación local. React + Tailwind + GSAP con foco en velocidad y SEO.",
+    link: "https://dronecam.cat",
+    preview: "https://dronecam.cat",
+    github: "https://github.com/christian-ruuizchristian-ruuiz",
+    techs: ["React","Tailwind","TypeScript","GSAP"],
+    steps: [
+      { title: "Brief & objetivos", desc: "Alineamos impacto visual con objetivos de negocio y SEO local." },
+      { title: "Arquitectura & copy", desc: "Jerarquía de contenidos, mensajes claros y llamadas a la acción medibles." },
+      { title: "Diseño UI", desc: "Lenguaje visual sobrio; tipografía y ritmo editorial que refuerzan confianza." },
+      { title: "Desarrollo React", desc: "Componentes accesibles, layout responsivo y microinteracciones GSAP." },
+      { title: "Rendimiento & SEO", desc: "Optimización técnica y Core Web Vitals por encima de 90." },
+      { title: "Lanzamiento", desc: "QA, despliegue controlado y monitorización inicial de métricas." },
+    ]
+  },
+  {
+    title: "Novaura — Automatización con IA",
+    excerpt: "Sitio corporativo para agencia de automatización. Interacciones fluidas y foco en leads.",
+    link: "https://novaura.es",
+    preview: "https://novaura.es",
+    github: "https://github.com/christian-ruuizchristian-ruuiz",
+    techs: ["React","Next.js","Tailwind","TypeScript","GSAP","Framer Motion"],
+    steps: [
+      { title: "Estrategia & posicionamiento", desc: "Mensajes de valor y estructura para captar demanda B2B." },
+      { title: "UI con motion", desc: "Microinteracciones sutiles y animaciones que guían la lectura." },
+      { title: "Desarrollo React/Next", desc: "Componentes tipados y diseño responsive a medida." },
+      { title: "Medición & SEO", desc: "Etiquetado, eventos y optimización para keywords del sector." }
+    ]
+  }
+];
+
+const Trabajos: React.FC = () => {
+  const [openProject, setOpenProject] = useState<Project | null>(null);
+  useEffect(() => { enhanceKineticCards(); }, []);
+  useReveal("#trabajos .card", { stagger: 0.06 });
+  return (
+    <section id="trabajos" className="relative mx-auto px-4 py-20" style={{maxWidth:'min(1280px,92vw)'}}>
+      <div className="mb-10"><p className="text-xs uppercase tracking-widest text-zinc-400">Trabajo seleccionado</p><h2 className="text-3xl md:text-5xl font-semibold">Proyectos reales para marcas reales</h2></div>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {PROJECTS.map((p) => (<IframeCard key={p.title} project={p} onOpen={setOpenProject} />))}
+      </div>
+      <ProjectSheet project={openProject} onClose={() => setOpenProject(null)} />
+      <div className="pointer-events-none absolute left-0 right-0 -bottom-2 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+    </section>
+  );
+};
+
+// -------------------- Manifiesto --------------------
+const Manifiesto: React.FC = () => {
+  const deco = useRef<HTMLDivElement | null>(null); useParallax(deco as any, { y: -12 }); useReveal('#manifiesto h2');
+  return (
+    <section id="manifiesto" className="relative mx-auto px-4 py-24" style={{maxWidth:'min(1280px,92vw)'}}>
+      <div ref={deco} className="pointer-events-none absolute -top-24 left-[-10%] h-64 w-64 rounded-full blur-3xl opacity-20 bg-[conic-gradient(from_180deg,rgba(255,255,255,.12),rgba(99,102,241,.25))]" />
+      <p className="text-xs uppercase tracking-widest text-zinc-400 mb-3">Manifiesto</p>
+      <h2 className="text-4xl md:text-6xl font-semibold leading-[1.05] max-w-4xl">Menos ruido, más negocio.</h2>
+      <p className="text-zinc-300 mt-6 max-w-3xl text-lg">Trabajo <strong>uno a uno</strong> con marcas que valoran el detalle. Diseño con intención, código limpio y métricas claras. Cada decisión tiene un porqué.</p>
+    </section>
+  );
+};
+
+// -------------------- CTA & Footer --------------------
+const CTA: React.FC<{ onOpenForm: () => void }> = ({ onOpenForm }) => (
+  <section id="contacto" className="mx-auto px-4 py-24" style={{maxWidth:'min(1280px,92vw)'}}>
+    <div className="rounded-3xl p-6 sm:p-10 bg-gradient-to-br from-indigo-500/20 to-white/5 border border-white/10 text-center">
+      <h3 className="text-2xl md:text-4xl font-semibold">¿Tu web está lista para el siguiente nivel?</h3>
+      <p className="text-zinc-300 mt-3">
+        Cuéntame tu proyecto en 1 minuto. Brief guiado y respuesta en menos de 24h.
+      </p>
+      <div className="mt-7 flex flex-wrap items-center gap-4 justify-center">
+        <Magnetic
+          as="button"
+          onClick={onOpenForm}
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-indigo-500 hover:bg-indigo-600 transition"
+        >
+          <Mail size={18}/> Enviar brief
+        </Magnetic>
+        <a
+          href="https://github.com/christian-ruuiz"
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl border border-white/10 hover:bg-white/5"
+        >
+          <Github size={18}/> GitHub
+        </a>
+        <a
+          href="https://www.instagram.com/christian.ruuiz"
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl border border-white/10 hover:bg-white/5"
+        >
+          <Instagram size={18}/> Instagram
+        </a>
+      </div>
+    </div>
+  </section>
+);
+
+const Footer: React.FC = () => (
+  <footer className="border-t border-white/10">
+    <div
+      className="mx-auto px-4 py-10 text-sm text-zinc-400 flex flex-col md:flex-row gap-4 md:items-center md:justify-between"
+      style={{maxWidth:'min(1280px,92vw)'}}
+    >
+      <p>© {new Date().getFullYear()} Christian Ruiz. Freelance. Todos los derechos reservados.</p>
+      <div className="flex gap-2">
+        <a
+          href="https://github.com/christian-ruuiz"
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-2 px-3 h-9 rounded-xl border border-white/10 hover:bg-white/5"
+        >
+          <Github size={16}/> GitHub
+        </a>
+        <a
+          href="https://www.instagram.com/christian.ruuiz"
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-2 px-3 h-9 rounded-xl border border-white/10 hover:bg-white/5"
+        >
+          <Instagram size={16}/> Instagram
+        </a>
+      </div>
+    </div>
+  </footer>
+);
+
+// -------------------- Scroll UI extra --------------------
+const ScrollProgress: React.FC = () => {
+  const bar = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!bar.current || !isBrowser()) return; ensureGSAP();
+    gsap.to(bar.current, {
+      height: () =>
+        (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100 + '%',
+      ease: 'none',
+      scrollTrigger: { trigger: document.body, start: 0, end: 'max', scrub: true }
+    });
+  }, []);
+  return (
+    <div
+      aria-hidden
+      ref={bar}
+      className="fixed right-2 sm:right-4 top-20 w-[3px] h-0 bg-indigo-400/80 rounded-full z-40"
+    />
+  );
+};
+
+const SectionSpy: React.FC = () => {
+  useEffect(() => {
+    if (!isBrowser()) return; ensureGSAP();
+    const sections = ['#servicios', '#trabajos', '#manifiesto', '#contacto'];
+    sections.forEach(sel => {
+      ScrollTrigger.create({
+        trigger: sel,
+        start: 'top center',
+        end: 'bottom center',
+        onToggle: (self) => {
+          const link = document.querySelector(`.navlink[data-target="${sel}"]`);
+          if (!link) return;
+          if (self.isActive) link.classList.add('text-white');
+          else link.classList.remove('text-white');
+        }
+      });
+    });
+  }, []);
+  return null;
+};
+
+// Fondo reactivo por sección (master timeline light)
+const SectionAtmosphere: React.FC = () => {
+  const ref = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!isBrowser() || prefersReduced()) return; ensureGSAP();
+    const el = ref.current as HTMLDivElement | null; if (!el) return;
+    const tl = gsap.timeline({ defaults: { duration: 1.2, ease: 'power2.out' } });
+    tl.to(el, {
+      background: 'radial-gradient(60% 60% at 50% 0%, rgba(99,102,241,0.25), transparent)'
+    });
+    ScrollTrigger.create({
+      trigger: '#servicios',
+      start: 'top bottom',
+      end: 'bottom top',
+      scrub: true,
+      onUpdate: ({ progress }) => { el.style.opacity = String(0.15 + progress * 0.25); }
+    });
+    ScrollTrigger.create({
+      trigger: '#trabajos',
+      start: 'top bottom',
+      end: 'bottom top',
+      scrub: true,
+      onUpdate: ({ progress }) => { el.style.filter = `hue-rotate(${progress*20}deg)`; }
+    });
+  }, []);
+  return <div ref={ref} className="pointer-events-none fixed inset-0 -z-10 opacity-20" />;
+};
+
+// -------------------- App --------------------
+export default function App() {
+  const [formOpen, setFormOpen] = useState(false);
+
+  useEffect(() => {
+    ensureGSAP();
+
+    // Self-tests (DEV)
+    if (isDev()) {
+      try {
+        console.assert(typeof Trabajos === 'function', 'Trabajos debe ser un componente.');
+        console.assert(Array.isArray(PROJECTS) && PROJECTS.length > 0, 'PROJECTS debe tener al menos un proyecto.');
+        const p = PROJECTS[0];
+        ['title','excerpt','link','techs','steps'].forEach(k =>
+          console.assert((p as any)[k] !== undefined, `Falta clave ${k} en PROJECTS[0]`)
+        );
+      } catch {}
+    }
+  }, []);
+
+  return (
+    <main className="bg-[#0B0B0E] text-zinc-100 min-h-screen selection:bg-indigo-500/30">
+      <Cursor />
+      <Grain />
+      <ParticlesCanvas />
+      <ScrollProgress />
+      <SectionSpy />
+      <SectionAtmosphere />
+
+      <Nav onOpenForm={() => setFormOpen(true)} />
+      <Hero />
+      <Servicios />
+      <Trabajos />
+      <Manifiesto />
+      <CTA onOpenForm={() => setFormOpen(true)} />
+      <Footer />
+      <MultiStepForm open={formOpen} onClose={() => setFormOpen(false)} />
+
+      {/* Estilos base si no hay Tailwind + pequeñas mejoras responsive */}
+      <style>{`
+        :root{ --radius: 1.25rem; }
+        @supports not (backdrop-filter: blur(6px)) { header{ background: rgba(0,0,0,.6); } }
+        html,body{margin:0;padding:0}
+        .grid{display:grid}
+        @media (min-width:1536px){ /* pantallas grandes/TV */
+          .hero-title{ letter-spacing:-0.02em; }
+        }
+      `}</style>
+    </main>
+  );
+}

@@ -1,0 +1,12 @@
+/* src/index.css - Tailwind v4 */
+@import "tailwindcss";
+
+/* (Opcional) tus estilos base */
+:root {
+  --background: #0b0b10;
+  --foreground: #f7f7fb;
+}
+.dark {
+  --background: #0b0b10;
+  --foreground: #f7f7fb;
+}

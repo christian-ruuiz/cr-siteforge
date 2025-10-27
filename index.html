@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>CR•ForgeSite — Under-Construction Page Generator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Generate beautiful, responsive Coming Soon and maintenance pages. Pick a template, tweak the look, set a countdown, and export a single HTML file.">
+    <meta name="keywords" content="coming soon, maintenance page, under construction, html generator, landing template, countdown, responsive templates">
+    <meta name="robots" content="index,follow,max-image-preview:large">
+    <meta name="googlebot" content="index,follow">
+    <meta name="application-name" content="CR•ForgeSite">
+    <meta name="theme-color" content="#0b0812" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <meta name="color-scheme" content="dark light">
+    <meta name="format-detection" content="telephone=no, email=no, address=no">
+    <link rel="icon" type="image/svg+xml" href="/vite.svg">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "CR•ForgeSite",
+        "description": "Generate beautiful, responsive Coming Soon and maintenance pages and export a single HTML file.",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Web",
+        "url": "",
+        "inLanguage": "en",
+        "author": { "@type": "Organization", "name": "CR•ForgeSite" },
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      }
+    </script>
+    <script>
+      (function () {
+        var loc = String(window.location.href || "").split("#")[0].split("?")[0];
+        var mk = function(rel, href, attrs){ var l=document.createElement("link"); l.rel=rel; l.href=href; if(attrs){for(var k in attrs) l.setAttribute(k, attrs[k]);} document.head.appendChild(l); return l; };
+        mk("canonical", loc);
+        mk("alternate", loc, { hrefLang: "en" });
+        var ld = document.querySelector('script[type="application/ld+json"]');
+        try {
+          if (ld && ld.textContent) {
+            var data = JSON.parse(ld.textContent);
+            if (!data.url) data.url = loc;
+            ld.textContent = JSON.stringify(data);
+          }
+        } catch {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
