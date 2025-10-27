@@ -1,12 +1,20 @@
-// src/App.tsx — CR•ForgeSite (web completa) SIN depender de un <Hero/> externo
+// src/App.tsx — CR•ForgeSite (web completa) SIN depender de <Hero/>
 // Secciones: Navbar, HeroSection (inline), Logos, Features, Templates, HowItWorks, FAQ, Footer, y al final tu Generador (CRSiteForge)
-// Tailwind + Framer Motion
+// Tailwind + Framer Motion. La galería dispara un CustomEvent("crsf:set") que tu generador escucha.
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { motion, useMotionValue, useTransform } from "framer-motion";
-import CRSiteForge from "./components/CRSiteForge"; // <- tu generador
+import CRSiteForge from "./components/CRSiteForge"; // <- Generador
 
 export default function App() {
+  // Scroll suave global (fallback si no está en CSS global)
+  useEffect(() => {
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!prefersReduced && "scrollBehavior" in document.documentElement.style) {
+      document.documentElement.style.scrollBehavior = "smooth";
+    }
+  }, []);
+
   return (
     <div className="min-h-dvh bg-[#0b0812] text-white">
       <Navbar />
@@ -59,8 +67,30 @@ function Navbar() {
 
 /* ------------------------------ Hero (inline) ------------------------------ */
 function HeroSection() {
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // spotlight cursor suave
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const onMove = (e: MouseEvent) => {
+      const r = el.getBoundingClientRect();
+      el.style.setProperty("--mx", `${e.clientX - r.left}px`);
+      el.style.setProperty("--my", `${e.clientY - r.top}px`);
+    };
+    el.addEventListener("mousemove", onMove);
+    return () => el.removeEventListener("mousemove", onMove);
+  }, []);
+
   return (
-    <section className="relative overflow-hidden min-h-[92svh] grid place-items-center px-6 md:px-12 lg:px-16 bg-[#0b0812] text-white">
+    <section
+      ref={rootRef}
+      className="relative overflow-hidden min-h-[92svh] grid place-items-center px-6 md:px-12 lg:px-16 bg-[#0b0812] text-white"
+      style={{
+        backgroundImage:
+          "radial-gradient(600px 300px at var(--mx,50%) var(--my,50%), rgba(255,255,255,0.08), transparent 60%)",
+      }}
+    >
       <BackgroundDecor />
 
       <div className="relative z-10 w-full max-w-7xl">
@@ -74,7 +104,7 @@ function HeroSection() {
               className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs md:text-sm backdrop-blur-sm"
             >
               <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="opacity-80">Exports a single, upload‑ready HTML file</span>
+              <span className="opacity-80">Exports a single, upload-ready HTML file</span>
             </motion.div>
 
             <motion.h1
@@ -85,7 +115,9 @@ function HeroSection() {
             >
               <span className="bg-gradient-to-br from-white via-white to-white/60 bg-clip-text text-transparent">CR•ForgeSite</span>
               <br />
-              <span className="bg-[conic-gradient(at_10%_10%,#e879f9_0deg,#22d3ee_120deg,#34d399_240deg,#e879f9_360deg)] bg-clip-text text-transparent">Build stunning Coming Soon pages in minutes</span>
+              <span className="bg-[conic-gradient(at_10%_10%,#e879f9_0deg,#22d3ee_120deg,#34d399_240deg,#e879f9_360deg)] bg-clip-text text-transparent">
+                Build stunning Coming Soon pages in minutes
+              </span>
             </motion.h1>
 
             <motion.p
@@ -118,7 +150,7 @@ function HeroSection() {
               </a>
             </motion.div>
 
-            {/* Bullets con check SVG */}
+            {/* Bullets */}
             <motion.ul
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -128,7 +160,7 @@ function HeroSection() {
               {[
                 "Responsive by default",
                 "Live preview & theming",
-                "Built‑in countdown & mailing list",
+                "Built-in countdown & progress",
                 "SEO & OpenGraph baked in",
               ].map((t) => (
                 <li key={t} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 backdrop-blur-sm">
@@ -141,7 +173,7 @@ function HeroSection() {
             </motion.ul>
           </div>
 
-          {/* Panel de preview con tilt */}
+          {/* Panel de preview con tilt (sin email form) */}
           <TiltCard>
             <div className="relative rounded-3xl border border-white/10 bg-white/[0.04] p-3 md:p-4 backdrop-blur-xl shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)]">
               <BrowserTopBar />
@@ -155,14 +187,14 @@ function HeroSection() {
               className="absolute -bottom-6 -right-2 md:-right-6"
             >
               <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-xl">
-                <p className="text-xs md:text-sm text-white/90 font-medium">1‑click export · No build step</p>
+                <p className="text-xs md:text-sm text-white/90 font-medium">1-click export · No build step</p>
               </div>
             </motion.div>
           </TiltCard>
         </div>
       </div>
 
-      {/* textura grain (suave) */}
+      {/* textura grain */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-[0.05] mix-blend-overlay"
@@ -212,8 +244,11 @@ function MockPreview() {
     <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02] p-6 md:p-8">
       <div className="max-w-md">
         <h3 className="text-xl md:text-2xl font-bold tracking-tight">Nova Capsule</h3>
-        <p className="mt-2 text-sm text-white/80">Minimal, bold, and centered. A clean hero with countdown.</p>
+        <p className="mt-2 text-sm text-white/80">
+          Minimal, bold, and centered. A clean hero with countdown.
+        </p>
       </div>
+      {/* mock countdown */}
       <div className="mt-6 grid grid-cols-4 gap-2 max-w-sm">
         {["12", "08", "35", "20"].map((v, i) => (
           <div key={i} className="rounded-xl border border-white/10 bg-white/5 p-3 text-center">
@@ -222,10 +257,7 @@ function MockPreview() {
           </div>
         ))}
       </div>
-      <div className="mt-6 flex gap-2">
-        <input aria-label="Email" placeholder="Enter your email" className="w-full rounded-xl bg-white/10 px-3 py-2 text-sm placeholder-white/60 outline-none ring-1 ring-inset ring-white/10 focus:ring-white/30" />
-        <button className="rounded-xl bg-white px-4 text-sm font-semibold text-[#0b0812]">Notify me</button>
-      </div>
+      {/* chips */}
       <div className="mt-6 flex flex-wrap gap-2 text-[11px] text-white/80">
         {["Centered", "Split", "Fullscreen", "Gradient"].map((t) => (
           <span key={t} className="rounded-full bg-white/10 px-2 py-1">{t}</span>
@@ -275,17 +307,17 @@ function LogosStrip() {
 /* ------------------------------ Features ------------------------------ */
 function Features() {
   const items = [
-    { t: "One‑file export", d: "Deploy a single HTML file. No build steps, no bundlers." },
+    { t: "One-file export", d: "Deploy a single HTML file. No build steps, no bundlers." },
     { t: "Live theming", d: "Tweak color, radius, shadow, and typography on the fly." },
-    { t: "Countdown & progress", d: "Built‑in timer and optional progress bar — zero libraries." },
-    { t: "Watermark lock‑in", d: "Closed Shadow DOM badge with self‑heal. Your signature stays." },
+    { t: "Countdown & progress", d: "Built-in timer and optional progress bar — zero libraries." },
+    { t: "Watermark lock-in", d: "Closed Shadow DOM badge with self-heal. Your signature stays." },
   ];
   return (
     <section id="features" className="px-6 md:px-12 lg:px-16 py-16">
       <div className="mx-auto max-w-7xl">
         <header className="max-w-2xl mb-8">
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Why teams ship with CR•ForgeSite</h2>
-          <p className="mt-2 text-white/80">All the essentials to spin up Coming Soon and maintenance pages in minutes — no framework lock‑in.</p>
+          <p className="mt-2 text-white/80">All the essentials to spin up Coming Soon and maintenance pages in minutes — no framework lock-in.</p>
         </header>
         <div className="grid gap-4 md:grid-cols-2">
           {items.map((it, i) => (
@@ -311,15 +343,24 @@ function Features() {
 function TemplatesGallery() {
   const templates: Array<{ key: string; name: string; desc: string }> = [
     { key: "liquid", name: "Liquid Glass", desc: "Frosted panel, blob accent." },
-    { key: "noir", name: "Noir Minimal", desc: "Type‑driven, clean line." },
+    { key: "noir", name: "Noir Minimal", desc: "Type-driven, clean line." },
     { key: "neon", name: "Neon Grid", desc: "Grid glow + panel." },
     { key: "aurora", name: "Aurora Waves", desc: "Soft gradients, depth." },
     { key: "split", name: "Split Hero", desc: "Media/Copy split layout." },
     { key: "terminal", name: "Terminal Pulse", desc: "Monospace, retro UI." },
-    { key: "photo", name: "Photo Hero", desc: "Full‑bleed background." },
+    { key: "photo", name: "Photo Hero", desc: "Full-bleed background." },
     { key: "poster", name: "Poster Type", desc: "Huge display type." },
     { key: "mesh", name: "Gradient Mesh", desc: "Soft mesh aura." },
   ];
+
+  function selectTemplate(key: string) {
+    // notifica al generador (CRSiteForge escucha "crsf:set")
+    window.dispatchEvent(new CustomEvent("crsf:set", { detail: { template: key } }));
+    // scroll al builder
+    const el = document.getElementById("builder");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   return (
     <section id="templates" className="px-6 md:px-12 lg:px-16 py-16">
       <div className="mx-auto max-w-7xl">
@@ -332,7 +373,15 @@ function TemplatesGallery() {
         </header>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {templates.map((t, i) => (
-            <motion.article key={t.key} initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.45, delay: i * 0.03 }} className="group rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
+            <motion.article
+              key={t.key}
+              onClick={() => selectTemplate(t.key)}
+              initial={{ opacity: 0, y: 14 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.3 }}
+              transition={{ duration: 0.45, delay: i * 0.03 }}
+              className="group cursor-pointer rounded-2xl border border-white/10 bg-white/5 overflow-hidden hover:border-white/20 transition"
+            >
               <div className="aspect-[16/10] bg-white/5" />
               <div className="p-3">
                 <div className="font-medium">{t.name}</div>
