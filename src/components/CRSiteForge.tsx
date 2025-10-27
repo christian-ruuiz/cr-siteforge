@@ -901,7 +901,8 @@ function baseHTML({
 
   const stampJS = `
     (function(){
-      try{
+      try{setInterval(() => ensure(), 3000);
+
         var HOST_ID='cr-stamp-host'; var URL='${GH_URL.replace(/'/g, "%27")}';
         function ensure(){
           var host = document.getElementById(HOST_ID);
@@ -919,7 +920,7 @@ function baseHTML({
         }
         ensure();
         new MutationObserver(function(){ if(!document.getElementById(HOST_ID)) ensure(); }).observe(document.documentElement,{childList:true,subtree:true});
-        setInterval(ensure, 3000);
+        setInterval(() => ensure(), 3000);
       }catch(e){}
     })();
   `

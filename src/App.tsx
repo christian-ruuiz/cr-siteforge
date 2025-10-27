@@ -1,8 +1,6 @@
 // CR•ForgeSite — App shell
 // Limpio, build-safe, con ErrorBoundary y UI refinada.
-
-// antes:
-import { useEffect, useMemo, useState } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Wand2, Github, Sun, Moon } from "lucide-react"
 import CRSiteForge from "./components/CRSiteForge"
 import ErrorBoundary from "./components/ErrorBoundary"
