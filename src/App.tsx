@@ -1,16 +1,15 @@
-// src/App.tsx — CR•ForgeSite (web completa) SIN depender de <Hero/>
-// Secciones: Navbar, HeroSection (inline), Logos, Features, Templates, HowItWorks, FAQ, Footer, y al final tu Generador (CRSiteForge)
-// Tailwind + Framer Motion. La galería dispara un CustomEvent("crsf:set") que tu generador escucha.
+// src/App.tsx — CR•ForgeSite (web completa) sin <Hero/> externo ni props requeridas
+// Secciones: Navbar, Hero inline, Logos, Features, Templates, HowItWorks, FAQ, Footer y al final el Generador (CRSiteForge)
 
 import React, { useEffect, useRef } from "react";
 import { motion, useMotionValue, useTransform } from "framer-motion";
-import CRSiteForge from "./components/CRSiteForge"; // <- Generador
+import CRSiteForge from "./components/CRSiteForge"; // <- tu generador (default export)
 
 export default function App() {
-  // Scroll suave global (fallback si no está en CSS global)
+  // Scroll suave (opcional)
   useEffect(() => {
-    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!prefersReduced && "scrollBehavior" in document.documentElement.style) {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!reduce && "scrollBehavior" in document.documentElement.style) {
       document.documentElement.style.scrollBehavior = "smooth";
     }
   }, []);
@@ -26,7 +25,7 @@ export default function App() {
       <FAQ />
       <SiteFooter />
 
-      {/* Generador al final (ancla #builder) */}
+      {/* Generador al final */}
       <section id="builder" className="relative px-6 md:px-12 lg:px-16 py-16">
         <div className="mx-auto max-w-7xl">
           <header className="mb-6 flex items-center justify-between gap-2">
@@ -65,11 +64,10 @@ function Navbar() {
   );
 }
 
-/* ------------------------------ Hero (inline) ------------------------------ */
+/* ------------------------------ Hero inline ------------------------------ */
 function HeroSection() {
   const rootRef = useRef<HTMLDivElement>(null);
 
-  // spotlight cursor suave
   useEffect(() => {
     const el = rootRef.current;
     if (!el) return;
@@ -86,83 +84,39 @@ function HeroSection() {
     <section
       ref={rootRef}
       className="relative overflow-hidden min-h-[92svh] grid place-items-center px-6 md:px-12 lg:px-16 bg-[#0b0812] text-white"
-      style={{
-        backgroundImage:
-          "radial-gradient(600px 300px at var(--mx,50%) var(--my,50%), rgba(255,255,255,0.08), transparent 60%)",
-      }}
+      style={{ backgroundImage: "radial-gradient(600px 300px at var(--mx,50%) var(--my,50%), rgba(255,255,255,0.08), transparent 60%)" }}
     >
       <BackgroundDecor />
 
       <div className="relative z-10 w-full max-w-7xl">
         <div className="grid lg:grid-cols-[1.05fr,0.95fr] gap-10 items-center">
-          {/* Copy & CTAs */}
           <div className="text-center lg:text-left">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs md:text-sm backdrop-blur-sm"
-            >
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs md:text-sm backdrop-blur-sm">
               <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
               <span className="opacity-80">Exports a single, upload-ready HTML file</span>
             </motion.div>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease: "easeOut", delay: 0.05 }}
-              className="mt-5 text-[clamp(2rem,7vw,4.25rem)] md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight"
-            >
+            <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.05 }} className="mt-5 text-[clamp(2rem,7vw,4.25rem)] md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight">
               <span className="bg-gradient-to-br from-white via-white to-white/60 bg-clip-text text-transparent">CR•ForgeSite</span>
               <br />
-              <span className="bg-[conic-gradient(at_10%_10%,#e879f9_0deg,#22d3ee_120deg,#34d399_240deg,#e879f9_360deg)] bg-clip-text text-transparent">
-                Build stunning Coming Soon pages in minutes
-              </span>
+              <span className="bg-[conic-gradient(at_10%_10%,#e879f9_0deg,#22d3ee_120deg,#34d399_240deg,#e879f9_360deg)] bg-clip-text text-transparent">Build stunning Coming Soon pages in minutes</span>
             </motion.h1>
 
-            <motion.p
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease: "easeOut", delay: 0.1 }}
-              className="mt-6 max-w-2xl mx-auto lg:mx-0 text-base md:text-lg text-white/80"
-            >
+            <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1 }} className="mt-6 max-w-2xl mx-auto lg:mx-0 text-base md:text-lg text-white/80">
               Pick a template, tune colors and type, drop in the countdown, and export. No odd dependencies. No build hoops. One file — done.
             </motion.p>
 
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease: "easeOut", delay: 0.15 }}
-              className="mt-8 flex flex-col sm:flex-row gap-3 justify-center lg:justify-start"
-            >
-              <a
-                href="#builder"
-                className="group inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm md:text-base font-semibold bg-white text-[#0b0812] hover:opacity-95 active:opacity-90 shadow-[0_10px_30px_-10px_rgba(255,255,255,0.5)]"
-              >
-                🚀 Start building
-                <span className="transition-transform group-hover:translate-x-0.5">→</span>
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.15 }} className="mt-8 flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+              <a href="#builder" className="group inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm md:text-base font-semibold bg-white text-[#0b0812] hover:opacity-95 active:opacity-90 shadow-[0_10px_30px_-10px_rgba(255,255,255,0.5)]">
+                🚀 Start building <span className="transition-transform group-hover:translate-x-0.5">→</span>
               </a>
-              <a
-                href="#templates"
-                className="inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm md:text-base font-semibold border border-white/20 bg-white/5 backdrop-blur hover:bg-white/10"
-              >
+              <a href="#templates" className="inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm md:text-base font-semibold border border-white/20 bg-white/5 backdrop-blur hover:bg-white/10">
                 🎨 Browse templates
               </a>
             </motion.div>
 
-            {/* Bullets */}
-            <motion.ul
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease: "easeOut", delay: 0.2 }}
-              className="mt-6 grid sm:grid-cols-2 gap-3 text-sm text-white/80"
-            >
-              {[
-                "Responsive by default",
-                "Live preview & theming",
-                "Built-in countdown & progress",
-                "SEO & OpenGraph baked in",
-              ].map((t) => (
+            <motion.ul initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.2 }} className="mt-6 grid sm:grid-cols-2 gap-3 text-sm text-white/80">
+              {["Responsive by default", "Live preview & theming", "Built-in countdown & progress", "SEO & OpenGraph baked in"].map((t) => (
                 <li key={t} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 backdrop-blur-sm">
                   <span aria-hidden className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-400/20">
                     <svg viewBox="0 0 20 20" fill="none" className="h-3.5 w-3.5"><path d="M5 10.5l3 3 7-7" stroke="rgb(52 211 153)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -173,19 +127,13 @@ function HeroSection() {
             </motion.ul>
           </div>
 
-          {/* Panel de preview con tilt (sin email form) */}
           <TiltCard>
             <div className="relative rounded-3xl border border-white/10 bg-white/[0.04] p-3 md:p-4 backdrop-blur-xl shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)]">
               <BrowserTopBar />
               <MockPreview />
               <div className="absolute inset-0 rounded-3xl ring-1 ring-inset ring-white/10 pointer-events-none" />
             </div>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.25 }}
-              className="absolute -bottom-6 -right-2 md:-right-6"
-            >
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.25 }} className="absolute -bottom-6 -right-2 md:-right-6">
               <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-xl">
                 <p className="text-xs md:text-sm text-white/90 font-medium">1-click export · No build step</p>
               </div>
@@ -207,10 +155,8 @@ function HeroSection() {
 function BackgroundDecor() {
   return (
     <>
-      {/* glows */}
       <div className="pointer-events-none absolute -top-24 -left-24 h-80 w-80 rounded-full bg-fuchsia-500/20 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-24 -right-24 h-96 w-96 rounded-full bg-sky-400/20 blur-3xl" />
-      {/* grid mask */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-[0.07]"
@@ -222,7 +168,6 @@ function BackgroundDecor() {
           WebkitMaskImage: "radial-gradient(60% 60% at 50% 40%, black, transparent 70%)",
         }}
       />
-      {/* accent ring */}
       <div className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[120vmax] w-[120vmax] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/5 [mask-image:radial-gradient(closest-side,black,transparent)]" />
     </>
   );
@@ -244,11 +189,8 @@ function MockPreview() {
     <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02] p-6 md:p-8">
       <div className="max-w-md">
         <h3 className="text-xl md:text-2xl font-bold tracking-tight">Nova Capsule</h3>
-        <p className="mt-2 text-sm text-white/80">
-          Minimal, bold, and centered. A clean hero with countdown.
-        </p>
+        <p className="mt-2 text-sm text-white/80">Minimal, bold, and centered. A clean hero with countdown.</p>
       </div>
-      {/* mock countdown */}
       <div className="mt-6 grid grid-cols-4 gap-2 max-w-sm">
         {["12", "08", "35", "20"].map((v, i) => (
           <div key={i} className="rounded-xl border border-white/10 bg-white/5 p-3 text-center">
@@ -257,7 +199,6 @@ function MockPreview() {
           </div>
         ))}
       </div>
-      {/* chips */}
       <div className="mt-6 flex flex-wrap gap-2 text-[11px] text-white/80">
         {["Centered", "Split", "Fullscreen", "Gradient"].map((t) => (
           <span key={t} className="rounded-full bg-white/10 px-2 py-1">{t}</span>
@@ -287,7 +228,7 @@ function TiltCard({ children }: { children: React.ReactNode }) {
   );
 }
 
-/* ------------------------------ Logos Strip ------------------------------ */
+/* ------------------------------ Logos ------------------------------ */
 function LogosStrip() {
   const logos = ["Vercel", "Netlify", "Cloudflare", "GitHub", "Shopify", "WordPress"];
   return (
@@ -339,9 +280,9 @@ function Features() {
   );
 }
 
-/* ------------------------------ Templates Gallery ------------------------------ */
+/* ------------------------------ Templates ------------------------------ */
 function TemplatesGallery() {
-  const templates: Array<{ key: string; name: string; desc: string }> = [
+  const templates = [
     { key: "liquid", name: "Liquid Glass", desc: "Frosted panel, blob accent." },
     { key: "noir", name: "Noir Minimal", desc: "Type-driven, clean line." },
     { key: "neon", name: "Neon Grid", desc: "Grid glow + panel." },
@@ -352,15 +293,10 @@ function TemplatesGallery() {
     { key: "poster", name: "Poster Type", desc: "Huge display type." },
     { key: "mesh", name: "Gradient Mesh", desc: "Soft mesh aura." },
   ];
-
-  function selectTemplate(key: string) {
-    // notifica al generador (CRSiteForge escucha "crsf:set")
-    window.dispatchEvent(new CustomEvent("crsf:set", { detail: { template: key } }));
-    // scroll al builder
+  function goBuilder() {
     const el = document.getElementById("builder");
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   }
-
   return (
     <section id="templates" className="px-6 md:px-12 lg:px-16 py-16">
       <div className="mx-auto max-w-7xl">
@@ -375,12 +311,13 @@ function TemplatesGallery() {
           {templates.map((t, i) => (
             <motion.article
               key={t.key}
-              onClick={() => selectTemplate(t.key)}
+              onClick={goBuilder}
               initial={{ opacity: 0, y: 14 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.3 }}
               transition={{ duration: 0.45, delay: i * 0.03 }}
               className="group cursor-pointer rounded-2xl border border-white/10 bg-white/5 overflow-hidden hover:border-white/20 transition"
+              title={`Open ${t.name} in builder`}
             >
               <div className="aspect-[16/10] bg-white/5" />
               <div className="p-3">
